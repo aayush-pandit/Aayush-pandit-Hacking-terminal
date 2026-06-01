@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# गिटहब सर्वर के स्तर पर ही कॉन्फ़िगरेशन कैशे को पूरी तरह बंद करना
+env:
+  GRADLE_OPTS: "-Dorg.gradle.configuration-cache=false -Dorg.gradle.unsafe.configuration-cache=false"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,10 +25,9 @@ jobs:
         distribution: 'temurin'
 
     - name: Complete Project Reset and Build
-      # यह स्टेप बिना किसी पुरानी फाइल के गड़बड़ किए, खुद अंदर ही 100% सही फाइलें जनरेट कर देगा
       run: |
-        # पुराने किसी भी खराब ढांचे को साफ करना
-        rm -rf app gradlew gradle
+        # पुराने किसी भी खराब ढांचे और कैशे फोल्डर को जबरन डिलीट करना
+        rm -rf app build.gradle.kts settings.gradle.kts gradlew gradle .gradle
         
         # नए सिरे से सही फोल्डर बनाना
         mkdir -p app/src/main/java/com/example
@@ -33,7 +36,7 @@ jobs:
         mkdir -p app/src/main/res/drawable
         mkdir -p gradle/wrapper
 
-        # आपकी अपलोड की हुई फाइलों को उनके सही फोल्डर्स में डालना
+        # आपकी फाइलों को उनके सही फोल्डर्स में डालना
         [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/ || true
         [ -f proguard-rules.pro ] && mv proguard-rules.pro app/ || true
         [ -f gradle.properties ] && cp gradle.properties app/ || true
@@ -44,7 +47,7 @@ jobs:
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
-        # 100% सही settings.gradle.kts फाइल का निर्माण करना
+        # सही settings.gradle.kts फाइल का निर्माण
         echo '
         pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
         dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
@@ -52,7 +55,7 @@ jobs:
         include(":app")
         ' > settings.gradle.kts
 
-        # 100% सही app/build.gradle.kts फाइल का निर्माण करना (बिना किसी सिंटैक्स एरर के)
+        # सही app/build.gradle.kts फाइल का निर्माण
         echo '
         plugins {
             id("com.android.application") version "8.3.0"
@@ -72,12 +75,13 @@ jobs:
         }
         ' > app/build.gradle.kts
 
-        # फ्रेश ग्रेडल रैपर सेट करना ताकि टास्क मिल सके
+        # फ्रेश ग्रेडल wrapper तैयार करना (कस्टम सेटिंग्स के साथ)
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-        
+
     - name: Run Build
-      run: ./gradlew assembleDebug --no-configuration-cache --no-build-cache
+      # यहाँ सभी संभावित कैशे को बंद करने के फ्लैग्स लगा दिए गए हैं
+      run: ./gradlew assembleDebug --no-configuration-cache --no-build-cache --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
