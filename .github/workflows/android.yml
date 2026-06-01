@@ -75,11 +75,9 @@ jobs:
         # फ्रेश ग्रेडल रैपर सेट करना ताकि टास्क मिल सके
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-
+        
     - name: Run Build
-      run: ./gradlew assembleDebug --no-configuration-cache
-
-
+      run: ./gradlew assembleDebug --no-configuration-cache --no-build-cache
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
