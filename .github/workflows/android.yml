@@ -20,24 +20,55 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Arrange Files Into Standard Structure
+    - name: Absolute Project Structure Override
+      # यह स्टेप पुरानी सभी खराब फाइलों को डिलीट करके एक बिल्कुल नया और साफ ढांचा तैयार करेगा
       run: |
+        # पहले से बने पुराने या खराब स्ट्रक्चर को पूरी तरह साफ करना
+        rm -rf app/build.gradle.kts
+        rm -rf app/src/main/AndroidManifest.xml
+        
+        # सही डायरेक्टरी स्ट्रक्चर दोबारा बनाना
         mkdir -p app/src/main/java/com/example
+        mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/mipmap-anydpi-v26
         mkdir -p app/src/main/res/drawable
         mkdir -p gradle
 
+        # libs.versions.toml को उसकी सही जगह भेजना
         if [ -f libs.versions.toml ]; then mv libs.versions.toml gradle/; fi
-        if [ -f build.gradle.kts ]; then mv build.gradle.kts app/; fi
-        if [ -f proguard-rules.pro ]; then mv proguard-rules.pro app/; fi
-        if [ -f AndroidManifest.xml ]; then mv AndroidManifest.xml app/src/main/; fi
         
+        # मुख्य एंड्रॉइड कॉन्फ़िगरेशन फाइल को सही स्थान पर कॉपी करना
+        if [ -f build.gradle.kts ]; then cp build.gradle.kts app/; fi
+        if [ -f proguard-rules.pro ]; then cp proguard-rules.pro app/; fi
+        if [ -f AndroidManifest.xml ]; then cp AndroidManifest.xml app/src/main/; fi
+        
+        # सभी कोडिंग और रिसोर्स फाइलों को सही फोल्डर्स में डालना
         mv *.kt app/src/main/java/com/example/ 2>/dev/null || true
         mv colors.xml strings.xml themes.xml backup_rules.xml data_extraction_rules.xml app/src/main/res/values/ 2>/dev/null || true
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
+        # रूट में एक बिल्कुल नई और साफ settings.gradle.kts फाइल बनाना
+        echo '
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        include(":app")
+        ' > settings.gradle.kts
+
+        # गायब wrapper और gradlew फाइल जनरेट करना
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
