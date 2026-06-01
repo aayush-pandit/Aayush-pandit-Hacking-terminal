@@ -77,7 +77,8 @@ jobs:
         chmod +x gradlew
 
     - name: Run Build
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleDebug --no-configuration-cache
+
 
 
     - name: Upload APK Artifact
