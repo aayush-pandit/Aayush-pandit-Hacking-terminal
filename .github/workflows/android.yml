@@ -20,47 +20,24 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Complete Project Structure Fix
+    - name: Arrange Files Into Standard Structure
       run: |
-        # सभी जरूरी डायरेक्टरी और फोल्डर्स बनाना
         mkdir -p app/src/main/java/com/example
-        mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/mipmap-anydpi-v26
         mkdir -p app/src/main/res/drawable
         mkdir -p gradle
 
-        # libs.versions.toml फाइल को सही स्थान पर भेजना
-        if [ -f libs.versions.toml ]; then
-          mv libs.versions.toml gradle/
-        fi
-
-        # मुख्य एंड्रॉइड फाइलों को सही जगह मूव करना
-        [ -f build.gradle.kts ] && mv build.gradle.kts app/ || true
-        [ -f proguard-rules.pro ] && mv proguard-rules.pro app/ || true
-        [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/ || true
+        if [ -f libs.versions.toml ]; then mv libs.versions.toml gradle/; fi
+        if [ -f build.gradle.kts ]; then mv build.gradle.kts app/; fi
+        if [ -f proguard-rules.pro ]; then mv proguard-rules.pro app/; fi
+        if [ -f AndroidManifest.xml ]; then mv AndroidManifest.xml app/src/main/; fi
         
-        # सभी Kotlin (.kt) फाइलों को पैकेज फोल्डर में डालना
         mv *.kt app/src/main/java/com/example/ 2>/dev/null || true
-        
-        # सभी एक्सएमएल (.xml) और इमेजेस को रिसोर्स फोल्डर में डालना
         mv colors.xml strings.xml themes.xml backup_rules.xml data_extraction_rules.xml app/src/main/res/values/ 2>/dev/null || true
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
-        # रूट में एक सही settings.gradle.kts बनाना
-        echo 'include(":app")' > settings.gradle.kts
-
-        # [FINAL FIX] वर्जन एरर को ठीक करने के लिए वर्जन को डाउनग्रेड करना
-        if [ -f app/build.gradle.kts ]; then
-          sed -i 's/"9.1.1"/"8.3.0"/g' app/build.gradle.kts
-          sed -i "s/'9.1.1'/'8.3.0'/g" app/build.gradle.kts
-        fi
-        if [ -f gradle/libs.versions.toml ]; then
-          sed -i 's/9.1.1/8.3.0/g' gradle/libs.versions.toml
-        fi
-
-        # गायब wrapper और gradlew फाइल जनरेट करना
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
