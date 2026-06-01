@@ -23,7 +23,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Complete Project Reset and Manifest Fix
+    - name: Complete Project Reset and Jetpack Compose Fix
       run: |
         rm -rf app build.gradle.kts settings.gradle.kts gradlew gradle .gradle
         
@@ -43,7 +43,7 @@ jobs:
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
-        # [CRITICAL FIX] Manifest में से गायब रिसोर्सेज (Theme, Icon, Rules) को डिफ़ॉल्ट सिस्टम वैल्यू से बदलना
+        # Manifest में से गायब रिसोर्सेज को डिफ़ॉल्ट सिस्टम वैल्यू से बदलना
         if [ -f app/src/main/AndroidManifest.xml ]; then
           sed -i 's/android:theme="@style\/Theme.MyApplication"/android:theme="@android:style\/Theme.DeviceDefault"/' app/src/main/AndroidManifest.xml
           sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@android:mipmap\/sym_def_app_icon"/' app/src/main/AndroidManifest.xml
@@ -52,6 +52,7 @@ jobs:
           sed -i 's/android:fullBackupContent="[^"]*"//g' app/src/main/AndroidManifest.xml
         fi
 
+        # सही settings.gradle.kts फाइल का निर्माण
         echo '
         pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
         dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
@@ -59,6 +60,7 @@ jobs:
         include(":app")
         ' > settings.gradle.kts
 
+        # [CRITICAL FIX] Jetpack Compose लाइब्ररीज़ को लोड करने के लिए फ्रेश build.gradle.kts
         echo '
         plugins {
             id("com.android.application") version "8.3.0"
@@ -75,6 +77,19 @@ jobs:
                 versionName = "1.0"
             }
             compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+            kotlinOptions { jvmTarget = "17" }
+            buildFeatures { compose = true }
+            composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
+        }
+        dependencies {
+            implementation("androidx.core:core-ktx:1.12.0")
+            implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+            implementation("androidx.activity:activity-compose:1.8.2")
+            implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+            implementation("androidx.compose.ui:ui")
+            implementation("androidx.compose.ui:ui-graphics")
+            implementation("androidx.compose.ui:ui-tooling-preview")
+            implementation("androidx.compose.material3:material3")
         }
         ' > app/build.gradle.kts
 
