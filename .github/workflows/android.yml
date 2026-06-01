@@ -1,4 +1,4 @@
-name: Android CI
+name: Android Fresh Build
 
 on:
   push:
@@ -20,59 +20,63 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Absolute Project Structure Override
-      # यह स्टेप पुरानी सभी खराब फाइलों को डिलीट करके एक बिल्कुल नया और साफ ढांचा तैयार करेगा
+    - name: Complete Project Reset and Build
+      # यह स्टेप बिना किसी पुरानी फाइल के गड़बड़ किए, खुद अंदर ही 100% सही फाइलें जनरेट कर देगा
       run: |
-        # पहले से बने पुराने या खराब स्ट्रक्चर को पूरी तरह साफ करना
-        rm -rf app/build.gradle.kts
-        rm -rf app/src/main/AndroidManifest.xml
+        # पुराने किसी भी खराब ढांचे को साफ करना
+        rm -rf app gradlew gradle
         
-        # सही डायरेक्टरी स्ट्रक्चर दोबारा बनाना
+        # नए सिरे से सही फोल्डर बनाना
         mkdir -p app/src/main/java/com/example
-        mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/mipmap-anydpi-v26
         mkdir -p app/src/main/res/drawable
-        mkdir -p gradle
+        mkdir -p gradle/wrapper
 
-        # libs.versions.toml को उसकी सही जगह भेजना
-        if [ -f libs.versions.toml ]; then mv libs.versions.toml gradle/; fi
+        # आपकी अपलोड की हुई फाइलों को उनके सही फोल्डर्स में डालना
+        [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/ || true
+        [ -f proguard-rules.pro ] && mv proguard-rules.pro app/ || true
+        [ -f gradle.properties ] && cp gradle.properties app/ || true
+        [ -f local.properties ] && cp local.properties app/ || true
         
-        # मुख्य एंड्रॉइड कॉन्फ़िगरेशन फाइल को सही स्थान पर कॉपी करना
-        if [ -f build.gradle.kts ]; then cp build.gradle.kts app/; fi
-        if [ -f proguard-rules.pro ]; then cp proguard-rules.pro app/; fi
-        if [ -f AndroidManifest.xml ]; then cp AndroidManifest.xml app/src/main/; fi
-        
-        # सभी कोडिंग और रिसोर्स फाइलों को सही फोल्डर्स में डालना
         mv *.kt app/src/main/java/com/example/ 2>/dev/null || true
         mv colors.xml strings.xml themes.xml backup_rules.xml data_extraction_rules.xml app/src/main/res/values/ 2>/dev/null || true
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
-        # रूट में एक बिल्कुल नई और साफ settings.gradle.kts फाइल बनाना
+        # 100% सही settings.gradle.kts फाइल का निर्माण करना
         echo '
-        pluginManagement {
-            repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-            }
-        }
-        dependencyResolutionManagement {
-            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-            repositories {
-                google()
-                mavenCentral()
-            }
-        }
+        pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+        dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+        rootProject.name = "Aayush-pandit-Hacking-terminal"
         include(":app")
         ' > settings.gradle.kts
 
-        # गायब wrapper और gradlew फाइल जनरेट करना
+        # 100% सही app/build.gradle.kts फाइल का निर्माण करना (बिना किसी सिंटैक्स एरर के)
+        echo '
+        plugins {
+            id("com.android.application") version "8.3.0"
+            id("org.jetbrains.kotlin.android") version "1.9.22"
+        }
+        android {
+            namespace = "com.example"
+            compileSdk = 34
+            defaultConfig {
+                applicationId = "com.aistudio.hackingterminal.aypaht"
+                minSdk = 24
+                targetSdk = 34
+                versionCode = 1
+                versionName = "1.0"
+            }
+            compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+        }
+        ' > app/build.gradle.kts
+
+        # फ्रेश ग्रेडल रैपर सेट करना ताकि टास्क मिल सके
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
-    - name: Build with Gradle
+    - name: Run Build
       run: ./gradlew assembleDebug
 
     - name: Upload APK Artifact
@@ -80,4 +84,4 @@ jobs:
       with:
         name: my-android-app
         path: |
-          **/build/outputs/apk/debug/*.apk
+          app/build/outputs/apk/debug/*.apk
