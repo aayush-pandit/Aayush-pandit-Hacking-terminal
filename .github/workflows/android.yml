@@ -20,25 +20,31 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Auto Fix Project Structure
-      # यह स्टेप आपकी सभी बाहर बिखरी फाइलों को ऑटोमैटिक सही एंड्रॉइड फोल्डर स्ट्रक्चर में डाल देगा
+    - name: Complete Project Structure Fix
+      # यह स्टेप आपकी बिखरी हुई फाइलों के साथ-साथ 'libs.versions.toml' को भी सही 'gradle' फोल्डर में डाल देगा
       run: |
-        # सही डायरेक्टरी स्ट्रक्चर बनाना
+        # सभी जरूरी डायरेक्टरी और फोल्डर्स बनाना
         mkdir -p app/src/main/java/com/example
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/mipmap-anydpi-v26
         mkdir -p app/src/main/res/drawable
+        mkdir -p gradle  # ग्रेडेल कॉन्फ़िगरेशन के लिए मुख्य फोल्डर
 
-        # मुख्य फाइलों को मूव करना
+        # libs.versions.toml फाइल को उसके सही स्थान 'gradle' फोल्डर के अंदर डालना
+        if [ -f libs.versions.toml ]; then
+          mv libs.versions.toml gradle/
+        fi
+
+        # मुख्य एंड्रॉइड फाइलों को सही जगह मूव करना
         [ -f build.gradle.kts ] && mv build.gradle.kts app/ || true
         [ -f proguard-rules.pro ] && mv proguard-rules.pro app/ || true
         [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/ || true
         
-        # सभी Kotlin (.kt) फाइलों को सही पैकेज फोल्डर में डालना
+        # सभी Kotlin (.kt) फाइलों को पैकेज फोल्डर में डालना
         mv *.kt app/src/main/java/com/example/ 2>/dev/null || true
         
-        # सभी एक्सएमएल (.xml) और इमेजेस को सही रिसोर्स फोल्डर में डालना
+        # सभी एक्सएमएल (.xml) और इमेजेस को रिसोर्स फोल्डर में व्यवस्थित करना
         mv colors.xml strings.xml themes.xml backup_rules.xml data_extraction_rules.xml app/src/main/res/values/ 2>/dev/null || true
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
@@ -46,7 +52,7 @@ jobs:
         # रूट में एक सही settings.gradle.kts बनाना
         echo 'include(":app")' > settings.gradle.kts
 
-        # गायब gradlew फाइल को जनरेट करना
+        # गायब wrapper और gradlew फाइल जनरेट करना
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
