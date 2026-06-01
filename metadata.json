@@ -1,0 +1,6 @@
+{
+  "name": "Aayush Pandit Hacking Terminal",
+  "description": "A cyberpunk inspired terminal simulator with matrix design, real-time monitors, command executor, multiple themes, and customization options.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
