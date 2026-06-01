@@ -1,4 +1,4 @@
-sename: Android Fresh Build
+name: Android Fresh Build
 
 on:
   push:
