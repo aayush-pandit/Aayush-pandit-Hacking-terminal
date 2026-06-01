@@ -38,7 +38,14 @@ jobs:
         mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
         mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
 
+        # [CRITICAL PACKAGE FIX] पैकेज और ऐप आईडी को एक समान मैच करना ताकि कंपाइलर एरर न दे
+        if [ -f app/src/main/java/com/example/MainActivity.kt ]; then
+          sed -i 's/package.*/package com.example/' app/src/main/java/com/example/MainActivity.kt
+        fi
+
+        # Manifest में से गायब रिसोर्सेज को सिस्टम की डिफ़ॉल्ट वैल्यू से बदलना
         if [ -f app/src/main/AndroidManifest.xml ]; then
+          sed -i 's/package="[^"]*"//g' app/src/main/AndroidManifest.xml
           sed -i 's/android:theme="@style\/Theme.MyApplication"/android:theme="@android:style\/Theme.DeviceDefault"/' app/src/main/AndroidManifest.xml
           sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@android:mipmap\/sym_def_app_icon"/' app/src/main/AndroidManifest.xml
           sed -i 's/android:roundIcon="[^"]*"//g' app/src/main/AndroidManifest.xml
@@ -62,7 +69,7 @@ jobs:
             namespace = "com.example"
             compileSdk = 34
             defaultConfig {
-                applicationId = "com.aistudio.hackingterminal.aypaht"
+                applicationId = "com.example"
                 minSdk = 24
                 targetSdk = 34
                 versionCode = 1
@@ -92,7 +99,6 @@ jobs:
         cache-disabled: true
 
     - name: Run Build APK
-      # [CRITICAL FIX] यहाँ gradle कमांड को डायरेक्ट सर्वर पाथ से चलाया जा रहा है ताकि फाइल ढूँढने की जरूरत न पड़े
       run: gradle assembleDebug --no-daemon --no-build-cache --no-configuration-cache
 
     - name: Upload APK Artifact
