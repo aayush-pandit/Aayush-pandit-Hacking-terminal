@@ -19,30 +19,39 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Grant execute permission for gradlew
+    - name: Auto Fix Project Structure
+      # यह स्टेप आपकी सभी बाहर बिखरी फाइलों को ऑटोमैटिक सही एंड्रॉइड फोल्डर स्ट्रक्चर में डाल देगा
       run: |
-        if [ -f gradlew ]; then
-          chmod +x gradlew
-        else
-          echo "gradlew file not found in root, searching in subdirectories..."
-          find . -name gradlew -exec chmod +x {} \;
-        fi
+        # सही डायरेक्टरी स्ट्रक्चर बनाना
+        mkdir -p app/src/main/java/com/example
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/mipmap-anydpi-v26
+        mkdir -p app/src/main/res/drawable
+
+        # मुख्य फाइलों को मूव करना
+        [ -f build.gradle.kts ] && mv build.gradle.kts app/ || true
+        [ -f proguard-rules.pro ] && mv proguard-rules.pro app/ || true
+        [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/ || true
+        
+        # सभी Kotlin (.kt) फाइलों को सही पैकेज फोल्डर में डालना
+        mv *.kt app/src/main/java/com/example/ 2>/dev/null || true
+        
+        # सभी एक्सएमएल (.xml) और इमेजेस को सही रिसोर्स फोल्डर में डालना
+        mv colors.xml strings.xml themes.xml backup_rules.xml data_extraction_rules.xml app/src/main/res/values/ 2>/dev/null || true
+        mv ic_launcher*.xml app/src/main/res/mipmap-anydpi-v26/ 2>/dev/null || true
+        mv *.webp *.png app/src/main/res/drawable/ 2>/dev/null || true
+
+        # रूट में एक सही settings.gradle.kts बनाना
+        echo 'include(":app")' > settings.gradle.kts
+
+        # गायब gradlew फाइल को जनरेट करना
+        gradle wrapper --gradle-version 8.5
+        chmod +x gradlew
 
     - name: Build with Gradle
-      run: |
-        if [ -f gradlew ]; then
-          ./gradlew assembleDebug
-        else
-          GRADLEW_PATH=$(find . -name gradlew | head -n 1)
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "Error: gradlew file not found anywhere in the repository."
-            exit 1
-          fi
-          DIR=$(dirname "$GRADLEW_PATH")
-          cd "$DIR" && ./gradlew assembleDebug
-        fi
+      run: ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
